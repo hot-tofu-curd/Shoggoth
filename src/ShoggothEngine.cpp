@@ -121,31 +121,20 @@ PBYTE ShoggothPolyEngine::AddCOFFLoader(PBYTE payload, int payloadSize, PBYTE ar
         return NULL;
     }
 
-    if (arguments) {
-        // Argument + argument size + payload
-        payloadAndArgument = MergeChunks(arguments, argumentSize, (PBYTE)&argumentSize, sizeof(int));
-        payloadAndArgumentSize = argumentSize + sizeof(int);
+    newPayloadChunk = MergeChunks(arguments, argumentSize, payload, payloadSize);
+    newPayloadChunkSize = payloadSize + argumentSize;
+    VirtualFree(payload, 0, MEM_RELEASE);
 
-        newPayloadChunk = MergeChunks(payloadAndArgument, payloadAndArgumentSize, payload, payloadSize);
-        newPayloadChunkSize = payloadSize + payloadAndArgumentSize;
-        VirtualFree(payload, 0, MEM_RELEASE);
-        VirtualFree(payloadAndArgument, 0, MEM_RELEASE);
-    }
-    else {
-        newPayloadChunk = payload;
-        newPayloadChunkSize = payloadSize;
-    }
-    
     // Merge input binary and call stub
     payloadWithCall = MergeChunks(callStub, callStubSize, newPayloadChunk, newPayloadChunkSize);
-    
+    payloadWithCallSize = newPayloadChunkSize + callStubSize;
+    VirtualFree(newPayloadChunk, 0, MEM_RELEASE);
+
     this->asmjitRuntime.release(callStub);
     // VirtualFree(callStub, 0, MEM_RELEASE);
-    // New payload size
-    payloadWithCallSize = payloadSize + callStubSize;
 
     // Since input PE address is in stack now, we can create a garbage and pop it.
-    popStub = this->GenerateThreePopWithGarbage(x86::rcx, x86::rdx, x86::r8,argumentSize, popStubSize);
+    popStub = this->GenerateThreePopWithGarbage(x86::rcx, x86::rdx, x86::r8, argumentSize, popStubSize);
 
     // Merge Call Stub and Pop stub
     payloadWithCallAndPop = MergeChunks(payloadWithCall, payloadWithCallSize, popStub, popStubSize);
@@ -179,17 +168,10 @@ PBYTE ShoggothPolyEngine::GenerateThreePopWithGarbage(x86::Gp payloadReg, x86::G
     PBYTE garbageInstructions = this->GenerateRandomGarbage(garbageSize);
     // Argument + argument size + payload
     asmjitAssembler->pop(argumentReg);
-    if (argumentSize) {
-        asmjitAssembler->mov(argumentSizeReg, argumentReg);
-        asmjitAssembler->mov(payloadReg, argumentReg);
-        asmjitAssembler->add(argumentSizeReg, argumentSize);
-        asmjitAssembler->add(payloadReg, argumentSize + sizeof(int));
-    }
-    else {
-        asmjitAssembler->mov(payloadReg, argumentReg);
-        asmjitAssembler->xor_(argumentReg,argumentReg);
-        asmjitAssembler->xor_(argumentSizeReg,argumentSizeReg);
-    }
+    asmjitAssembler->mov(argumentSizeReg, argumentSize);
+    asmjitAssembler->mov(payloadReg, argumentReg);
+    asmjitAssembler->add(payloadReg, argumentSize);
+
     popPtr = this->AssembleCodeHolder(popSize);
     returnValue = MergeChunks(garbageInstructions, garbageSize, popPtr, popSize);
     popStubSize = garbageSize + popSize;
@@ -440,9 +422,6 @@ PBYTE ShoggothPolyEngine::GetCallInstructionOverPayloadAndArguments(int payloadS
     this->asmjitCodeHolder.relocateToBase(0x00);
     int callOffset = payloadSize + argumentSize;
     // Directly generate a call instruction over payloadsize
-    if (argumentSize) {
-        callOffset += sizeof(int);
-    }
     asmjitAssembler->call(callOffset + 5);
     // Assemble the buffer
     return this->AssembleCodeHolder(callSize);

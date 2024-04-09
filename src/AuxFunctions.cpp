@@ -143,3 +143,14 @@ bool Checkx64PE(PBYTE fileBuffer) {
 	}
 	return false;
 }
+
+PBYTE GenArgBytes(LPSTR args, int argsLen) {
+	char* pos = args;
+	PBYTE returnValue = (PBYTE)VirtualAlloc(NULL, argsLen, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	for (size_t count = 0; count < argsLen; count++) {
+		sscanf(pos, "%2hhx", returnValue + count);
+		pos += 2;
+	}
+
+	return returnValue;
+}
