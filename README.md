@@ -66,7 +66,7 @@ Basically, in order to obtain shellcode with the C to Shellcode technique, I rem
 
 The source code of these can be seen and edited from [COFFLoader](https://github.com/frkngksl/Shoggoth/tree/main/COFFLoader) and [PELoader](https://github.com/frkngksl/Shoggoth/tree/main/PELoader) directories. Also compiled versions of these source codes can be found in [stub](https://github.com/frkngksl/Shoggoth/tree/main/stub) directory. For now, If you want to edit or change these loaders, you should obey the signatures and replace the precompiled binaries from the stub directory.
 
-To pass arguments to a BOF, use the '--coff-arg' option. Shoggoth expects a pre-formatted hex string containing the packed arguments, which can be created by using TrustedSec's beacon_generate.py script. A copy of this script has been included as COFFArgGenerator/beacon_generate.py.
+To pass arguments to a BOF, use the '--coff-arg' option. Shoggoth expects a pre-formatted hex string containing the packed arguments, which can be created by using TrustedSec's beacon_generate.py script. A copy of this script has been included as COFFArgGenerator/beacon_generate.py. (Many thanks to @October7)
 
 ## RC4 Cipher
 
@@ -122,7 +122,7 @@ Usage of Shoggoth.exe:
                                                 [*] coff - Shoggoth appends a COFF loader stub. The input should be valid x64 COFF.
     --coff-arg <Argument>                   Set argument for COFF loader. Generate this string using COFFArgGenerator/beacon_generate.py.
                                                 example: --coff-arg 0a0000000600000068656c6c6f00
-                                                Only used in COFF loader mode.
+                                                Only used in COFF loader mode. (Thanks to @Octoberfest7)
     -k | --key <Encryption Key>             Set first encryption key instead of random key.
     --dont-do-first-encryption              Don't do the first (stream cipher) encryption.
     --dont-do-second-encryption             Don't do the second (block cipher) encryption.

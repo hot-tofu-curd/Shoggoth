@@ -30,7 +30,7 @@ void PrintHelp(char *binaryName) {
                                                 [*] coff - Shoggoth appends a COFF loader stub. The input should be valid x64 COFF.
     --coff-arg <Argument>                   Set argument for COFF loader. Generate this string using COFFArgGenerator/beacon_generate.py.
                                                 example: --coff-arg 0a0000000600000068656c6c6f00
-                                                Only used in COFF loader mode.
+                                                Only used in COFF loader mode. (Thanks to @Octoberfest7)
     -k | --key <Encryption Key>             Set first encryption key instead of random key.
     --dont-do-first-encryption              Don't do the first (stream cipher) encryption.
     --dont-do-second-encryption             Don't do the second (block cipher) encryption.
