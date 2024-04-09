@@ -66,6 +66,8 @@ Basically, in order to obtain shellcode with the C to Shellcode technique, I rem
 
 The source code of these can be seen and edited from [COFFLoader](https://github.com/frkngksl/Shoggoth/tree/main/COFFLoader) and [PELoader](https://github.com/frkngksl/Shoggoth/tree/main/PELoader) directories. Also compiled versions of these source codes can be found in [stub](https://github.com/frkngksl/Shoggoth/tree/main/stub) directory. For now, If you want to edit or change these loaders, you should obey the signatures and replace the precompiled binaries from the stub directory.
 
+To pass arguments to a BOF, use the '--coff-arg' option. Shoggoth expects a pre-formatted hex string containing the packed arguments, which can be created by using TrustedSec's beacon_generate.py script. A copy of this script has been included as COFFArgGenerator/beacon_generate.py.
+
 ## RC4 Cipher
 
 Shoggoth first uses one of the stream ciphers, the RC4 algorithm, to encrypt the payload it gets. After randomly generating the key used here, it encrypts the payload with that key. The decryptor stub, which decrypts the payload during runtime, is dynamically created and assembled by using AsmJit. The registers used in the stub are randomly selected for each sample.
@@ -118,7 +120,9 @@ Usage of Shoggoth.exe:
                                                 [*] raw - Shoggoth doesn't append a loader stub. (Default mode)
                                                 [*] pe - Shoggoth appends a PE loader stub. The input should be valid x64 PE.
                                                 [*] coff - Shoggoth appends a COFF loader stub. The input should be valid x64 COFF.
-    --coff-arg <Argument>                   Set argument for COFF loader. Only used in COFF loader mode.
+    --coff-arg <Argument>                   Set argument for COFF loader. Generate this string using COFFArgGenerator/beacon_generate.py.
+                                                example: --coff-arg 0a0000000600000068656c6c6f00
+                                                Only used in COFF loader mode.
     -k | --key <Encryption Key>             Set first encryption key instead of random key.
     --dont-do-first-encryption              Don't do the first (stream cipher) encryption.
     --dont-do-second-encryption             Don't do the second (block cipher) encryption.
@@ -152,3 +156,4 @@ Since these creatures are like a sentient blob of self-shaping, gelatinous flesh
 - https://www.nayuki.io/page/rc4-cipher-in-x86-assembly
 - https://www.deviantart.com/halycon450/art/Shoggoth-914584713
 - https://www.artstation.com/burakkrtak (Logo Designer)
+- https://github.com/trustedsec/COFFLoader/blob/main/beacon_generate.py

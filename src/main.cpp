@@ -75,10 +75,20 @@ int main(int argc, char *argv[]) {
 			std::cout << "[+] COFF Loader mode is selected!" << std::endl;
 		}
 		if (configurationOptions.coffArg) {
-			inputFileBuffer = shoggothEngine->AddCOFFLoader(inputFileBuffer, inputSize, (PBYTE)configurationOptions.coffArg, strlen(configurationOptions.coffArg), inputSize);
+			// Verify user provided an even number of bytes as arguments
+			if (strlen(configurationOptions.coffArg) % 2 != 0)
+			{
+				std::cout << "[!] Invalid args! Supplied argument string must contain an even number of characters." << std::endl;
+				return -1;
+			}
+			// Transform the supplied hex string into bytes
+			PBYTE argBytes = GenArgBytes(configurationOptions.coffArg, strlen(configurationOptions.coffArg) / 2);
+			inputFileBuffer = shoggothEngine->AddCOFFLoader(inputFileBuffer, inputSize, argBytes, strlen(configurationOptions.coffArg) / 2, inputSize);
 		}
 		else {
-			inputFileBuffer = shoggothEngine->AddCOFFLoader(inputFileBuffer, inputSize, NULL, 0, inputSize);
+			// If no args supplied, create default args to pass to BOF
+			const char defaultArgs[] = { 0x04, 0x00, 0x00, 0x00 };
+			inputFileBuffer = shoggothEngine->AddCOFFLoader(inputFileBuffer, inputSize, (PBYTE)defaultArgs, 4, inputSize);
 		}
 		if (!inputFileBuffer) {
 			std::cout << "[!] Error on merging COFF loader and payload!" << std::endl;
