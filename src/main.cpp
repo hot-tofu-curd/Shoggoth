@@ -86,8 +86,8 @@ int main(int argc, char *argv[]) {
 			inputFileBuffer = shoggothEngine->AddCOFFLoader(inputFileBuffer, inputSize, argBytes, strlen(configurationOptions.coffArg) / 2, inputSize);
 		}
 		else {
-			// If no args supplied, create default args to pass to BOF
-			const char defaultArgs[] = { 0x04, 0x00, 0x00, 0x00 };
+			// If no args supplied, we still need to pass an integer (4 bytes) containing the length of the args (0 in this case)
+			const char defaultArgs[] = { 0x00, 0x00, 0x00, 0x00 };
 			inputFileBuffer = shoggothEngine->AddCOFFLoader(inputFileBuffer, inputSize, (PBYTE)defaultArgs, 4, inputSize);
 		}
 		if (!inputFileBuffer) {

